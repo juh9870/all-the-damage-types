@@ -560,6 +560,18 @@ local function generateAmmoWithType(ammo, dt)
 
 		tint_entity(new_ent, tint)
 
+		if new_ent.minable ~= nil then
+			if new_ent.minable.result == ammo.item.name then
+				new_ent.minable.result = new_item.name
+			elseif new_ent.minable.results ~= nil then
+				for i, res in ipairs(new_ent.minable.results) do
+					if res.type == "item" and res.name == ammo.item.name then
+						new_ent.minable.results[i].name = new_item.name
+					end
+				end
+			end
+		end
+
 		local ent_loc_name = ent.localised_name or { "entity-name." .. ent.name }
 		if dt.atdt_localised_item_name_template ~= nil then
 			new_ent.localised_name = {
