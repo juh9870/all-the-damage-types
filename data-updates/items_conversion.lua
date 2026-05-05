@@ -519,6 +519,63 @@ for _, dt in pairs(data.raw["damage-type"]) do
 	end
 end
 
+--- @type data.DamageType[]
+local known_dts = {}
+
+--- @type {[data.DamageTypeName]: {[data.DamageTypeName]: data.DamageTypeName}}
+local damage_pairs = {}
+
+for id, dt in pairs(data.raw["damage-type"]) do
+	if dt.atdt_supported then
+		known_dts[#known_dts + 1] = dt
+	end
+end
+
+---@param damages data.DamageParameters[]
+---@param dt data.DamageType
+local function modify_damages(damages, dt)
+	if #damages == 0 then
+		return
+	end
+	local max = damages[1].amount
+	local primary = damages[1].type
+
+	for _, dmg in ipairs(damages) do
+		if dmg.amount > max then
+			max = dmg.amount
+			primary = dmg.type
+		end
+	end
+
+	damage_pairs[dt.name] = damage_pairs[dt.name] or {}
+
+	for _, dmg in ipairs(damages) do
+		if dmg.type == primary then
+			dmg.type = dt.name
+		else
+			local pair = damage_pairs[dt.name][dmg.type]
+			if pair == nil then
+				local sec_dt = data.raw["damage-type"][dmg.type] or dt
+				if sec_dt.atdt_seed == nil then
+					sec_dt.atdt_seed = atdt_utils.hash_of(sec_dt.name)
+				end
+				local rng = atdt_utils.new_rng(
+					atdt_utils.hash_sum(sec_dt.atdt_seed, dt.atdt_seed or atdt_utils.hash_of(dt.name))
+				)
+				local new_type = known_dts[math.floor(atdt_utils.next_rng(rng) * #known_dts) + 1]
+				damage_pairs[dt.name][dmg.type] = new_type.name
+				pair = new_type.name
+			end
+			dmg.type = pair
+		end
+
+		local edt = data.raw["damage-type"][dmg.type]
+		if edt ~= nil and edt.atdt_power_mult ~= nil then
+			dmg.amount = dmg.amount * edt.atdt_power_mult
+		end
+	end
+end
+
 --- @param ammo ATDTAmmoTemplate
 --- @param dt data.DamageType
 local function generateAmmoWithType(ammo, dt)
@@ -557,6 +614,8 @@ local function generateAmmoWithType(ammo, dt)
 	local new_ents = {}
 	local ent_mapping = {}
 
+	local damages = {}
+
 	for _, ent in pairs(ammo.related_entities) do
 		local new_ent = table.deepcopy(ent)
 		new_ent.name = "atdt-" .. dt.name .. "-" .. ent.name
@@ -589,8 +648,7 @@ local function generateAmmoWithType(ammo, dt)
 		end
 
 		for _, dmg in pairs(nontrigger_damages_of_entity(new_ent)) do
-			dmg.type = dt.name
-			dmg.amount = dmg.amount * (dt.atdt_power_mult or 1)
+			damages[#damages + 1] = dmg
 		end
 	end
 
@@ -609,8 +667,7 @@ local function generateAmmoWithType(ammo, dt)
 
 	for_each_trigger_effect(triggers, function(eff)
 		if eff.type == "damage" and eff.damage ~= nil then
-			eff.damage.type = dt.name
-			eff.damage.amount = eff.damage.amount * (dt.atdt_power_mult or 1)
+			damages[#damages + 1] = eff.damage
 		elseif
 			eff.type == "create-fire"
 			or eff.type == "create-entity"
@@ -634,6 +691,8 @@ local function generateAmmoWithType(ammo, dt)
 	end)
 
 	new_item.place_result = ent_mapping[new_item.place_result] or new_item.place_result
+
+	modify_damages(damages, dt)
 
 	local recipes = {}
 	for _, rec in pairs(ammo.recipes) do
