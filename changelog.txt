@@ -1,0 +1,10 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.0.0
+Date: 2026-05-05
+  Features:
+    - Emotional damage type
+    - initial commit [no ci]
+    - use items of the same damage type for crafting chains
+  Bugfixes:
+    - broken info.json
+    - placed turets returned base one when mined
