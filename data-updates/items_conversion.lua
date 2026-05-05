@@ -507,21 +507,27 @@ for _, tech in pairs(data.raw["technology"]) do
 	end
 end
 
+local items_mapping = {}
+
+for _, dt in pairs(data.raw["damage-type"]) do
+	items_mapping[dt.name] = {}
+	for _, ammo in pairs(ammos) do
+		-- skip items that already belong to this damage type or without recipes
+		if ammo.type[dt.name] ~= true and #ammo.recipes > 0 then
+			items_mapping[dt.name][ammo.name] = "atdt-" .. dt.name .. "-" .. ammo.name
+		end
+	end
+end
+
 --- @param ammo ATDTAmmoTemplate
 --- @param dt data.DamageType
 local function generateAmmoWithType(ammo, dt)
-	-- Only do craftable ammos
-	if #ammo.recipes == 0 then
-		return
-	end
-
-	-- skip ammos that already belong to this damage type
-	if ammo.type[dt.name] == true then
+	if items_mapping[dt.name][ammo.name] == nil then
 		return
 	end
 
 	local new_item = table.deepcopy(ammo.item)
-	new_item.name = "atdt-" .. dt.name .. "-" .. ammo.name
+	new_item.name = items_mapping[dt.name][ammo.name]
 	local loc_name = flib_locale.of_item(ammo.item) --[[@as data.LocalisedString]]
 	local dt_loc_name = dt.localised_name or { "damage-type-name." .. dt.name }
 
@@ -638,6 +644,15 @@ local function generateAmmoWithType(ammo, dt)
 				res.name = new_item.name
 			end
 		end
+
+		if new_rec.ingredients ~= nil then
+			for _, ing in pairs(new_rec.ingredients) do
+				if ing.type == "item" then
+					ing.name = items_mapping[dt.name][ing.name] or ing.name
+				end
+			end
+		end
+
 		recipes[#recipes + 1] = new_rec
 		local unlocked_with = ammo.recipes_unlocks[rec.name]
 		if unlocked_with ~= nil then
