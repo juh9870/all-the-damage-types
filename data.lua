@@ -48,6 +48,7 @@ local damage_types = {
 	dt("eldritch", false, "830591"),
 	dt("theoretical", false, "f8fc0f"),
 	dt("algebraical", false, "adf907"),
+	dt("emotional", false, "04f79e"),
 
 	-- Vanilla types
 	dt("electric", false, "fcf005"),
