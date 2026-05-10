@@ -89,7 +89,9 @@ end
 local protos =
 	{ "asteroid", "unit-spawner", "segment", "segmented-unit", "spider-leg", "spider-unit", "unit", "turret" }
 for _, proto in pairs(protos) do
-	for _, ent in pairs(data.raw[proto]) do
-		patch_entity(ent)
+	if data.raw[proto] ~= nil then
+		for _, ent in pairs(data.raw[proto]) do
+			patch_entity(ent)
+		end
 	end
 end
