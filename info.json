@@ -5,7 +5,7 @@
   "author": "juh9870",
   "homepage": "https://github.com/juh9870/all-the-damage-types",
   "description": "Adds a lot of damage types and variants of each bullet/rocket/laser turret/etc. for each of the damage types and scrambles enemies' resistances\n\nMade for Foundry Production Jam \"Analysis Paralysis\"",
-  "factorio_version": "2.0",
+  "factorio_version": "2.1",
   "dependencies": [
     "base",
     "flib"
